@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -46,6 +47,15 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	defer file.Close()
 
 	contentType := header.Header.Get("Content-Type")
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Content type not recognized", err)
+		return
+	}
+	if mediaType != "image/jpeg" && mediaType != "image/png" {
+		respondWithError(w, http.StatusBadRequest, "Mediatype not supported", errors.New("Mediatype not supported"))
+		return
+	}
 	contentTypeParts := strings.Split(contentType, "/")
 	if len(contentTypeParts) < 2 {
 		respondWithError(w, http.StatusBadRequest, "Content type not recognized", errors.New("Content type not recognized"))
