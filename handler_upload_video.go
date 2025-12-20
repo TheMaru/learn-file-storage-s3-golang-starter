@@ -90,13 +90,27 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	ratio, err := getVideoAspectRatio(tmpFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not get video dimensions", err)
+	}
+	var folderName string
+	switch ratio {
+	case "16:9":
+		folderName = "landscape"
+	case "9:16":
+		folderName = "portrait"
+	default:
+		folderName = "other"
+	}
+
 	key := make([]byte, 32)
 	_, err = rand.Read(key)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not generate rand key", err)
 		return
 	}
-	fileKey := hex.EncodeToString(key) + ".mp4"
+	fileKey := folderName + "/" + hex.EncodeToString(key) + ".mp4"
 
 	_, err = cfg.s3Client.PutObject(r.Context(), &s3.PutObjectInput{
 		Bucket:      aws.String(cfg.s3Bucket),
