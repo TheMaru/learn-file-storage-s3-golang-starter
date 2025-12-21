@@ -49,3 +49,14 @@ func approxEqual(a, b, tol float64) bool {
 	}
 	return (b - a) <= tol
 }
+
+func processVideoForFastStart(filePath string) (string, error) {
+	processingPath := filePath + ".processing"
+	execCmd := exec.Command("ffmpeg", "-i", filePath, "-c", "copy", "-movflags", "faststart", "-f", "mp4", processingPath)
+	err := execCmd.Run()
+	if err != nil {
+		return "", err
+	}
+
+	return processingPath, nil
+}

@@ -104,6 +104,17 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 		folderName = "other"
 	}
 
+	processedPath, err := processVideoForFastStart(tmpFile.Name())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not process file for fast start", err)
+	}
+	processedFile, err := os.Open(processedPath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not open processed file", err)
+	}
+	defer os.Remove(processedPath)
+	defer processedFile.Close()
+
 	key := make([]byte, 32)
 	_, err = rand.Read(key)
 	if err != nil {
@@ -115,7 +126,7 @@ func (cfg *apiConfig) handlerUploadVideo(w http.ResponseWriter, r *http.Request)
 	_, err = cfg.s3Client.PutObject(r.Context(), &s3.PutObjectInput{
 		Bucket:      aws.String(cfg.s3Bucket),
 		Key:         aws.String(fileKey),
-		Body:        tmpFile,
+		Body:        processedFile,
 		ContentType: aws.String(mediaType),
 	})
 	if err != nil {
